@@ -19,12 +19,13 @@
  *    2021-01-31  thebearmay     Code cleanup, release ready
  *    2021-01-31  thebearmay     Putting a config delay in at initialize to make sure version data is accurate
  *    2021-02-16  thebearmay     Add text date for restart
- *    2021-03-05  thebearmay     Added CPU and Temperature polling
- *    2021-03-05  lgkhan	 Added new formatted uptime attr, also added an html attr that stores a bunch of the usefull 
+ *    2021-03-04  thebearmay     Added CPU and Temperature polling 
+ *    2021-03-05  thebearmay     Add the degree symbol and scale to the temperature attribute 
+ *    2021-03-05  thebearmay	 Merged addtions from LGKhan: Added new formatted uptime attr, also added an html attr that stores a bunch of the usefull 
  *					info in table format so you can use on any dashboard
  */
 import java.text.SimpleDateFormat
-static String version()	{  return '1.3.3'  }
+static String version()	{  return '1.4.4'  }
 
 metadata {
     definition (
@@ -60,6 +61,8 @@ metadata {
         attribute "locationId", "string"
         attribute "lastHubRestartFormatted", "string"
         attribute "freeMemory", "string"
+	attribute "temperatureF", "string"
+        attribute "temperatureC", "string"
         attribute "formattedUptime", "string"
         attribute "html", "string";                              
    
@@ -69,9 +72,9 @@ metadata {
 }
 
 preferences {
-	input("debugEnable", "bool", title: "Enable debug logging?")
-    input("tempPollEnable", "bool", title: "Enable Temperature Polling")
-    input("tempPollRate", "number", title: "Temperature Polling Rate (seconds)\nDefault:300", default:300, submitOnChange: true)
+    input("debugEnable", "bool", title: "Enable debug logging?")
+    input("tempPollEnable", "bool", title: "Enable Temperature\Memory Polling")
+    input("tempPollRate", "number", title: "Temperature\Memory Polling Rate (seconds)\nDefault:300", default:300, submitOnChange: true)
     input("attribEnable", "bool", title: "Enable Info attribute?", default: false, required: false, submitOnChange: true)
 }
 
@@ -195,15 +198,16 @@ def getTemp(){
             response.headers.each {
                 log.debug "${it.name} : ${it.value}"
             }
-            
             log.debug response.data
         }
         tempWork = new Double(response.data.toString())
         if(debugEnable) log.debug tempWork
         if (location.temperatureScale == "F")
-            updateAttr("temperature",celsiusToFahrenheit(tempWork))
+            sendEvent(name:"temperature",value:celsiusToFahrenheit(tempWork),unit:"°${location.temperatureScale}")
         else
-            updateAttr("temperature",tempWork)
+            sendEvent(name:"temperature",value:tempWork,unit:"°${location.temperatureScale}")
+        updateAttr("temperatureF",celsiusToFahrenheit(tempWork)+ "<span class='small'> °F</span>")
+        updateAttr("temperatureC",tempWork+ "<span class='small'> °C</span>")
     })
     
     // get Free Memory
